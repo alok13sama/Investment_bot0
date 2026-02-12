@@ -1,0 +1,9 @@
+{
+    "age": 36,
+    "monthly_income": 90000.0,
+    "monthly_expenses": 50000.0,
+    "current_emergency_fund": 150000.0,
+    "risk_appetite": "High",
+    "has_term_insurance": false,
+    "has_health_insurance": false
+}

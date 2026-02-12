@@ -199,12 +199,13 @@ if not candidates.empty:
                     
                     for i, row in final_buys.iterrows():
                          st.success(f"✔ {row['ticker']}: Sentiment Neutral/Positive (Safe to Buy)")
-                else:
-                    st.warning("No stocks met the strict buying criteria today.")
-            else:
-                st.error("Failed to fetch market data.")
+                    else:
+                         st.warning("No stocks met the strict buying criteria today.")
+                    else:
+                         st.error("Failed to fetch market data.")
 
 else:
 
     st.info("👈 Enter your details in the Sidebar and click 'RUN AI ANALYSIS' to start.")
+
 

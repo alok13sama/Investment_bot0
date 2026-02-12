@@ -146,7 +146,7 @@ if run_btn:
                 pm = PortfolioManager(stock_budget)
                 candidates = pm.select_and_allocate(df_scored, top_n=15)
                 
-if not candidates.empty:
+                if not candidates.empty:
                     # History & Sentiment
                     hist = HistoryEngine()
                     stable = hist.filter_stocks(candidates)
@@ -155,10 +155,10 @@ if not candidates.empty:
                     st.subheader("🏆 Top AI Picks")
                     
                     # --- FIX: ROBUST MERGE ---
-                    # 1. Ensure 'ticker' is a column in df_scored (reset index if needed)
+                    # 1. Ensure 'ticker' is a column in df_scored
                     if 'ticker' not in df_scored.columns:
                         df_scored = df_scored.reset_index()
-                        if 'index' in df_scored.columns: # Rename generic 'index' to 'ticker'
+                        if 'index' in df_scored.columns: 
                             df_scored = df_scored.rename(columns={'index': 'ticker'})
 
                     # 2. Define the columns we WANT
@@ -168,16 +168,15 @@ if not candidates.empty:
                     available_cols = [c for c in desired_cols if c in df_scored.columns]
                     
                     # 4. Merge only the available data
-                    # We use a suffix to avoid "value_score_x" and "value_score_y" confusion
                     if 'ticker' in stable.columns and 'ticker' in df_scored.columns:
                         stable = pd.merge(stable, df_scored[available_cols], on='ticker', how='left', suffixes=('', '_new'))
                         
-                        # Fill generic N/A for missing scores so app doesn't crash
+                        # Fill generic N/A for missing scores
                         for col in ['total_score', 'value_score', 'tech_score']:
                             if col in stable.columns:
                                 stable[col] = stable[col].fillna(0)
                             else:
-                                stable[col] = 0 # Create dummy column if merge failed entirely
+                                stable[col] = 0
 
                     # 5. Create Display DF safely
                     display_cols = ['ticker', 'price', 'total_score', 'value_score', 'tech_score']
@@ -199,13 +198,11 @@ if not candidates.empty:
                     
                     for i, row in final_buys.iterrows():
                          st.success(f"✔ {row['ticker']}: Sentiment Neutral/Positive (Safe to Buy)")
-                    else:
-                         st.warning("No stocks met the strict buying criteria today.")
-                    else:
-                         st.error("Failed to fetch market data.")
+
+                else:
+                    st.warning("No stocks met the strict buying criteria today.")
+            else:
+                st.error("Failed to fetch market data.")
 
 else:
-
     st.info("👈 Enter your details in the Sidebar and click 'RUN AI ANALYSIS' to start.")
-
-

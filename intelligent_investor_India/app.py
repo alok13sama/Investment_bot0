@@ -146,7 +146,7 @@ if run_btn:
                 pm = PortfolioManager(stock_budget)
                 candidates = pm.select_and_allocate(df_scored, top_n=15)
                 
-                if not candidates.empty:
+if not candidates.empty:
                     # History & Sentiment
                     hist = HistoryEngine()
                     stable = hist.filter_stocks(candidates)
@@ -154,25 +154,39 @@ if run_btn:
                     # Display Final Table
                     st.subheader("🏆 Top AI Picks")
                     
-                    # --- FIX: RE-ATTACH SCORES ---
-                    # The 'stable' list might have lost the score columns. We merge them back from df_scored.
-                    cols_to_add = ['ticker', 'sector', 'total_score', 'value_score', 'tech_score']
+                    # --- FIX: ROBUST MERGE ---
+                    # 1. Ensure 'ticker' is a column in df_scored (reset index if needed)
+                    if 'ticker' not in df_scored.columns:
+                        df_scored = df_scored.reset_index()
+                        if 'index' in df_scored.columns: # Rename generic 'index' to 'ticker'
+                            df_scored = df_scored.rename(columns={'index': 'ticker'})
+
+                    # 2. Define the columns we WANT
+                    desired_cols = ['ticker', 'sector', 'total_score', 'value_score', 'tech_score']
                     
-                    # Only merge if columns are actually missing
-                    missing_cols = [c for c in cols_to_add if c not in stable.columns]
+                    # 3. Find which of these actually EXIST in df_scored
+                    available_cols = [c for c in desired_cols if c in df_scored.columns]
                     
-                    if missing_cols:
-                        # Merge the missing data back using 'ticker' as the common key
-                        stable = pd.merge(stable, df_scored[cols_to_add], on='ticker', how='left', suffixes=('', '_dup'))
+                    # 4. Merge only the available data
+                    # We use a suffix to avoid "value_score_x" and "value_score_y" confusion
+                    if 'ticker' in stable.columns and 'ticker' in df_scored.columns:
+                        stable = pd.merge(stable, df_scored[available_cols], on='ticker', how='left', suffixes=('', '_new'))
+                        
+                        # Fill generic N/A for missing scores so app doesn't crash
+                        for col in ['total_score', 'value_score', 'tech_score']:
+                            if col in stable.columns:
+                                stable[col] = stable[col].fillna(0)
+                            else:
+                                stable[col] = 0 # Create dummy column if merge failed entirely
+
+                    # 5. Create Display DF safely
+                    display_cols = ['ticker', 'price', 'total_score', 'value_score', 'tech_score']
+                    if 'sector' in stable.columns:
+                        display_cols.insert(1, 'sector')
+                        
+                    display_df = stable[display_cols].copy()
                     
-                    # Select columns safely
-                    display_df = stable[['ticker', 'sector', 'price', 'total_score', 'value_score', 'tech_score']].copy()
-                    
-                    # Format for display
-                    display_df['price'] = display_df['price'].apply(lambda x: f"₹{x:,.2f}")
-                    display_df['total_score'] = display_df['total_score'].fillna(0).astype(int)
-                    
-                    st.dataframe(display_df.style.background_gradient(subset=['total_score'], cmap='Greens'), use_container_width=True)
+                    # Format
                     display_df['price'] = display_df['price'].apply(lambda x: f"₹{x:,.2f}")
                     display_df['total_score'] = display_df['total_score'].astype(int)
                     
@@ -185,7 +199,6 @@ if run_btn:
                     
                     for i, row in final_buys.iterrows():
                          st.success(f"✔ {row['ticker']}: Sentiment Neutral/Positive (Safe to Buy)")
-
                 else:
                     st.warning("No stocks met the strict buying criteria today.")
             else:
@@ -194,3 +207,4 @@ if run_btn:
 else:
 
     st.info("👈 Enter your details in the Sidebar and click 'RUN AI ANALYSIS' to start.")
+

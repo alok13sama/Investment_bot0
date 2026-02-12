@@ -154,8 +154,25 @@ if run_btn:
                     # Display Final Table
                     st.subheader("🏆 Top AI Picks")
                     
-                    # Format for display
+                    # --- FIX: RE-ATTACH SCORES ---
+                    # The 'stable' list might have lost the score columns. We merge them back from df_scored.
+                    cols_to_add = ['ticker', 'sector', 'total_score', 'value_score', 'tech_score']
+                    
+                    # Only merge if columns are actually missing
+                    missing_cols = [c for c in cols_to_add if c not in stable.columns]
+                    
+                    if missing_cols:
+                        # Merge the missing data back using 'ticker' as the common key
+                        stable = pd.merge(stable, df_scored[cols_to_add], on='ticker', how='left', suffixes=('', '_dup'))
+                    
+                    # Select columns safely
                     display_df = stable[['ticker', 'sector', 'price', 'total_score', 'value_score', 'tech_score']].copy()
+                    
+                    # Format for display
+                    display_df['price'] = display_df['price'].apply(lambda x: f"₹{x:,.2f}")
+                    display_df['total_score'] = display_df['total_score'].fillna(0).astype(int)
+                    
+                    st.dataframe(display_df.style.background_gradient(subset=['total_score'], cmap='Greens'), use_container_width=True)
                     display_df['price'] = display_df['price'].apply(lambda x: f"₹{x:,.2f}")
                     display_df['total_score'] = display_df['total_score'].astype(int)
                     
@@ -175,4 +192,5 @@ if run_btn:
                 st.error("Failed to fetch market data.")
 
 else:
+
     st.info("👈 Enter your details in the Sidebar and click 'RUN AI ANALYSIS' to start.")
